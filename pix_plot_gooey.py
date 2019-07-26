@@ -41,7 +41,8 @@ from gooey import Gooey, GooeyParser
 
 def arg_define():
   parser = GooeyParser(description='Pix Plot analysis')
-  parser.add_argument('image_files', widget='DirChooser', help='Folder containing all images prepared for analysis. Images should be in JPEG format ending in .jpg')
+  parser.add_argument('image_Dir', widget='DirChooser', help='Folder containing all images prepared for analysis. Images should be in JPEG format ending in .jpg')
+  parser.add_argument('model_dir', widget='DirChooser', help='Select folder location of the model.')
   parser.add_argument('model_use', widget='FileChooser', help='Select the pretrained model that you want to use.')
   parser.add_argument('clusters', action= 'store', type=int, help='Choose the number of hotspots you want pix_plot to find')	
   parser.add_argument('validate', action='store', help='TRUE or FALSE')
@@ -457,17 +458,34 @@ def main(*args, **kwargs):
       'e.g. python utils/process_images.py "folder/*.jpg"')
   return image_glob
 
+def get_files(image_Dir, image_names):
+  image_paths = []
+  nonjpg = []
+  for f in image_names:
+    if f[-3:] == 'jpg':
+      image_paths.append(str(image_Dir) + '/' + str(f))
+    else:
+      nonjpg.append(f)
+  return image_paths
+
+
 if __name__ == '__main__':
   os.system('git clone https://github.com/YaleDHLab/pix-plot && cd pix-plot')
   args = arg_define()
-  image_file = args.image_files
-  image_files = glob(image_file)
+  #image_dir = os.path(args.image_Dir)
+  image_names = []
+  image_names = os.listdir(args.image_Dir)
+  #print(image_names[12])
+  image_Dir = args.image_Dir
+  #image_files = os.path(image_file)
+  image_files = get_files(image_Dir, image_names)
+  #print(image_files)
   output_dir = args.output #'/Users/wilsons2/argparse/pix-plot/output'
   model_use = args.model_use #'/Users/wilsons2/models/inception-2015-12-05.tgz'
   sizes = [16, 32, 64, 128]
   n_clusters = args.clusters
   errored_images = set()
-  model_dir = '/tmp/imagenet'
+  model_dir = args.model_dir
   vector_files = []
   method = args.method
   rewrite_image_thumbs = False
