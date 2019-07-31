@@ -26,17 +26,6 @@ import argparse
 from gooey import Gooey, GooeyParser
 
 
-# configure command line interface arguments
-#flags = tf.app.flags
-#flags.DEFINE_string('model_dir', '/tmp/imagenet', 'The location of downloaded imagenet model')
-#flags.DEFINE_string('model_use', 'Users/wilsons2/models/inception-2015-12-05.tgz', 'The model you will use for images')
-#flags.DEFINE_string('image_files', '', 'A glob path of images to process')
-#flags.DEFINE_integer('clusters', 20, 'The number of clusters to display in the image browser')
-#flags.DEFINE_boolean('validate_images', True, 'Whether to validate images before processing')
-#flags.DEFINE_string('output_folder', 'output', 'The folder where output files will be stored')
-#flags.DEFINE_string('layout', 'umap', 'The layout method to use {umap|tsne}')
-#FLAGS = flags.FLAGS
-
 @Gooey
 
 def arg_define():
@@ -71,8 +60,8 @@ def validate_inputs(validate_files, image_files, n_clusters):
   invalid_files = []
   for i in image_files:
     try:
-      cmd = get_magick_command('identify') + ' "' + i + '"'
-      response = subprocess.check_output(cmd, shell=True)
+      im = Image.open(i)
+      response = im.size
     except Exception as exc:
       invalid_files.append(i)
   if invalid_files:
@@ -95,30 +84,20 @@ def create_output_dirs(output_dir):
     ensure_dir_exists( join(output_dir, 'thumbs', str(i) + 'px') )
 
 
-def create_image_thumbs(image_files, output_dir, rewrite_image_thumbs, errored_images, all_sizes):
+def create_image_thumbs(image_files, output_dir, rewrite_image_thumbs, errored_images, thumb_sizes):
   '''
   Create output thumbs in 32px, 64px, and 128px
   '''
   print(' * creating image thumbs')
   resize_args = []
-  n_thumbs = len(image_files)
-  for c, j in enumerate(image_files):
-    sizes = []
-    out_paths = []
-    for i in sorted(all_sizes, key=int, reverse=True):
-      out_dir = join(output_dir, 'thumbs', str(i) + 'px')
-      out_path = join( out_dir, get_filename(j) + '.jpg' )
-      if os.path.exists(out_path) and not rewrite_image_thumbs:
-        continue
-      sizes.append(i)
-      out_paths.append(out_path)
-    if len(sizes) > 0:
-      resize_args.append([j, c, n_thumbs, sizes, out_paths])
+  for image_file in image_files:
 
+    resize_args.append([image_file, thumb_sizes, output_dir])
   pool = Pool()
   for result in pool.imap(resize_thumb, resize_args):
     if result:
       errored_images.add( get_filename(result) )
+
 
 
 def create_image_vectors(errored_images, image_files, output_dir):
@@ -373,31 +352,6 @@ def get_magick_command(cmd):
   return cmd
 
 
-def resize_thumb(args):
-  '''
-  Create a command line request to resize an image
-  Images for all thumb sizes are created in a single call, chaining the resize steps
-  '''
-  img_path, idx, n_imgs, sizes, out_paths = args
-  print(' * creating thumb', idx+1, 'of', n_imgs, 'at sizes', sizes)
-  cmd =  get_magick_command('convert') + ' '
-  cmd += '-define jpeg:size={' + str(sizes[0]) + 'x' + str(sizes[0]) + '} '
-  cmd += '"' + img_path + '" '
-  cmd += '-strip '
-  cmd += '-background none '
-  cmd += '-gravity center '
-  for i in range(0, len(sizes)):
-    cmd += '-resize "' + str(sizes[i]) + 'X' + str(sizes[i]) + '>" '
-    if not i == len(sizes)-1:
-      cmd += "-write "
-    cmd += '"' + out_paths[i] + '" '
-  try:
-    response = subprocess.check_output(cmd, shell=True)
-    return None
-  except:
-    return img_path
-
-
 def subdivide(l, n):
   '''
   Return n-sized sublists from iterable l
@@ -436,37 +390,29 @@ def limit_float(f):
   return int(f*10000)/10000
 
 
-def main(*args, **kwargs):
-  '''
-  The main function to run
-  '''
-  # user specified glob path with tensorflow flags
-  if image_files:
-    image_glob = glob(image_files)
-  # one argument was passed; assume it's a glob of image paths
-  elif len(sys.argv) == 2:
-    image_glob = glob(sys.argv[1])
-  # many args were passed; assume the user passed a glob
-  # path without quotes, and the shell auto-expanded them
-  # into a list of file arguments
-  elif len(sys.argv) > 2:
-    image_glob = sys.argv[1:]
-
-  # no glob path was specified
-  else:
-    print('Please specify a glob path of images to process\n' +
-      'e.g. python utils/process_images.py "folder/*.jpg"')
-  return image_glob
-
 def get_files(image_Dir, image_names):
   image_paths = []
   nonjpg = []
+  extension = ['jpg', 'png']
   for f in image_names:
-    if f[-3:] == 'jpg':
+    if f[-3:] in extension:
       image_paths.append(str(image_Dir) + '/' + str(f))
     else:
       nonjpg.append(f)
   return image_paths
+
+
+def resize_thumb(args):
+  image_file, sizes, output_dir = args
+  for size in sizes:
+    dim = size, size
+    print(dim)
+    file, ext = os.path.splitext(image_file)
+    path = []
+    path = file.split('/')
+    im = Image.open(image_file)
+    im.thumbnail(dim)
+    im.save(output_dir + '/thumbs/' + str(size) + 'px/' + path[-1] + '.jpg', "JPEG")
 
 
 if __name__ == '__main__':
