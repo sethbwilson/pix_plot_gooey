@@ -1,0 +1,11 @@
+name: pix
+channels:
+  - conda-forge
+dependencies:
+  - scikit-learn   # or 2.7
+  - numpy
+  - psutil
+  - pillow
+  - tensorflow
+  - gooey
+  - umap-learn
