@@ -27,6 +27,7 @@ import codecs
 import argparse
 from gooey import Gooey, GooeyParser
 import webbrowser
+import warnings
 
 
 
@@ -531,6 +532,7 @@ def get_model_dir(model_use):
 
 if __name__ == '__main__':
   os.system('git clone https://github.com/YaleDHLab/pix-plot && cd pix-plot')
+  warnings.filterwarnings("ignore")
   args = arg_define()
   image_Dir = args.image_Dir
   image_files = get_files(image_Dir)
