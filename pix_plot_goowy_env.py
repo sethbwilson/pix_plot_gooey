@@ -35,7 +35,7 @@ import webbrowser
 def arg_define():
   parser = GooeyParser(description='Pix Plot analysis')
   parser.add_argument('image_Dir', widget='DirChooser', help='Folder containing all images prepared for analysis. Images should be in JPEG format ending in .jpg')
-  parser.add_argument('model_dir', widget='DirChooser', help='Select folder location of the model.')
+  #parser.add_argument('model_dir', widget='DirChooser', help='Select folder location of the model.')
   parser.add_argument('model_use', widget='FileChooser', help='Select the pretrained model that you want to use.')
   parser.add_argument('clusters', action= 'store', type=int, help='Choose the number of hotspots you want pix_plot to find')	
  #parser.add_argument('validate', widget='Dropdown', choices=['TRUE', 'FALSE'], action='store', help='TRUE or FALSE')
@@ -521,6 +521,14 @@ def get_thumbs(tmp_file_path):
       nonjpg.append(f)
   return image_files
 
+def get_model_dir(model_use):
+  model_dir = ''
+  path_list= []
+  s = '/'
+  path_list = model_use.split('/')
+  model_dir = s.join(path_list[:-1])  
+  return(model_dir)
+
 if __name__ == '__main__':
   os.system('git clone https://github.com/YaleDHLab/pix-plot && cd pix-plot')
   args = arg_define()
@@ -528,10 +536,10 @@ if __name__ == '__main__':
   image_files = get_files(image_Dir)
   output_dir = args.output
   model_use = args.model_use
+  model_dir = get_model_dir(model_use)
   sizes = [16, 32, 64, 128]
   n_clusters = args.clusters
   errored_images = set()
-  model_dir = args.model_dir
   vector_files = []
   method = args.method
   rewrite_image_thumbs = False
