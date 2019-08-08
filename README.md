@@ -4,9 +4,11 @@ Pix_plot_gooey is a tool that provides users with the ability to visualize and a
 
 ## Running
 Launch code from terminal using command
+
 '''
 pythonw pix_plot_gooey_env.py
 '''
+
 A window will open up with several spaces to fill in. The fields are described below.
 
 |Field Name | Field Description|
