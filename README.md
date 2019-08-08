@@ -2,7 +2,7 @@
 A Gooey version of Pix Plot (https://github.com/YaleDHLab/pix-plot)
 Pix_plot_gooey is a tool that provides users with the ability to visualize and analyze thousands of images in a two-dimensional projection by comparing and clustering the images. The image analysis uses Tensorflow's Inception bindings, and the visualization layer uses a custom WebGL viewer.
 
-![alt text](https://files.slack.com/files-pri/TBJ8XA08K-FM61A9N20/2019-08-08_10-55-15.png)
+![alt text](https://github.com/sethbwilson/pix_plot_gooey/blob/master/Gooey%20interface.png)
 
 ## Running
 Launch code from terminal using command
@@ -11,7 +11,11 @@ Launch code from terminal using command
 pythonw pix_plot_gooey_env.py
 ```
 
-A window will open up with several spaces to fill in. The fields are described below.
+A window will open up with several spaces to fill in. 
+
+
+
+The fields are described below.
 
 |Field Name | Field Description|
 |---|---|
