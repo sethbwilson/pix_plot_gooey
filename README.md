@@ -26,7 +26,7 @@ The fields are described below.
 | method | This is a more technical feature. Select UMAP. |
 
 ## Next Steps
-- Installable on WIndows and Mac
+- Installable on Windows and Mac
 - Changes to HDBSCAN to find optimal number of clusters
 - Search feature
 - Detail feature
