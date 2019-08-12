@@ -2,7 +2,20 @@
 A Gooey version of Pix Plot (https://github.com/YaleDHLab/pix-plot). 
 Pix_plot_gooey is a tool that provides users with the ability to visualize and analyze thousands of images in a two-dimensional projection by comparing and clustering the images. The image analysis uses Tensorflow's Inception bindings, and the visualization layer uses a custom WebGL viewer.
 
-## Dependencies
+## Setup
+To clone this repository to you computer use 
+
+```
+git clone https://github.com/sethbwilson/pix_plot_gooey.git
+```
+Then, to create a new envitonment with all the correct dependencies run:
+```
+conda env create -f environment.yml
+```
+Activate that environment by running:
+```
+conda activate pix
+```
 
 ## Running
 Launch code from terminal using command
@@ -24,6 +37,9 @@ The fields are described below.
 | Clusters | Provide a number that the program will use to find hotspots in your data. The number provided will be the umber of hotspots the program will find. Pick a number that is close the the estimated nmber of categories you think are in the image set. The number provided must be less than the number of images in the data set. This is purely a browsing feature, it does not change the projection.|
 | output | This is the folder where all the information generated form the program will be stored. It is important that this folder is found within the pix-plot folder that the program generated upon launching. Click on the brose button, fing the pix-plot folder, double click on the folder and then make a new folder called output by clicking the new folder button. Open that folder for the program. 
 | method | This is a more technical feature. Select UMAP. |
+
+
+After the processing is finished, open a Google Chrome window and enter localhost:8000 in the search bar. The results of the processed are viewed in the web browser.
 
 ## Next Steps
 - Installable on Windows and Mac
