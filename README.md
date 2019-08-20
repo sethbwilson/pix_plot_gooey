@@ -38,7 +38,7 @@ The fields are described below.
 | output | This is the folder where all the information generated form the program will be stored. It is important that this folder is found within the pix-plot folder that the program generated upon launching. Click on the brose button, fing the pix-plot folder, double click on the folder and then make a new folder called output by clicking the new folder button. Open that folder for the program. 
 | method | This is a more technical feature. Select UMAP. |
 
-
+## Launching Viewer
 After the processing is finished, open a Google Chrome window and enter localhost:8000 in the search bar. The results of the processed are viewed in the web browser.
 
 ## Next Steps
