@@ -1,3 +1,5 @@
+This repository was developed while I was interning in the Data Science Lab at the Smithsonian institution. The repository is forked to the SI data science GitHub at https://github.com/sidatasciencelab/pix_plot_gooey where it lives.
+
 # pix_plot_gooey
 A Gooey version of Pix Plot (https://github.com/YaleDHLab/pix-plot). 
 Pix_plot_gooey is a tool that provides users with the ability to visualize and analyze thousands of images in a two-dimensional projection by comparing and clustering the images. The image analysis uses Tensorflow's Inception bindings, and the visualization layer uses a custom WebGL viewer.
