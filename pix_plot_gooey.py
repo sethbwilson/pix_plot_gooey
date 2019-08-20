@@ -24,6 +24,8 @@ import subprocess
 import codecs
 import argparse
 from gooey import Gooey, GooeyParser
+import warnings
+
 
 
 @Gooey
@@ -31,12 +33,10 @@ from gooey import Gooey, GooeyParser
 def arg_define():
   parser = GooeyParser(description='Pix Plot analysis')
   parser.add_argument('image_Dir', widget='DirChooser', help='Folder containing all images prepared for analysis. Images should be in JPEG format ending in .jpg')
-  parser.add_argument('model_dir', widget='DirChooser', help='Select folder location of the model.')
   parser.add_argument('model_use', widget='FileChooser', help='Select the pretrained model that you want to use.')
-  parser.add_argument('clusters', action= 'store', type=int, help='Choose the number of hotspots you want pix_plot to find')	
-  parser.add_argument('validate', action='store', help='TRUE or FALSE')
+  parser.add_argument('clusters', action= 'store', type=int, help='Choose the number of hotspots you want pix_plot to find')
   parser.add_argument('output', widget='DirChooser', help='The folder where output files will be stored')
-  parser.add_argument('method', action='store', help='Select method for mapping, type umap or TSNE')
+  parser.add_argument('method', widget='Dropdown', choices=['umap', 'tsne'], action='store', help='Select method for mapping, type umap or TSNE')
   args = parser.parse_args()
   return args 
 
@@ -233,8 +233,10 @@ def get_centroids(vector_files, n_clusters, image_vectors):
   X = np.array(image_vectors)
   fit_model = model.fit(X)
   centroids = fit_model.cluster_centers_
+  print(centroids)
   # find the points closest to the cluster centroids
   closest, _ = pairwise_distances_argmin_min(centroids, X)
+  print(closest)
   centroid_paths = [vector_files[i] for i in closest]
   centroid_json = []
   for c, i in enumerate(centroid_paths):
@@ -292,56 +294,6 @@ def get_atlas_thumbs(thumb_size, output_dir):
   return thumbs
 
 
-def write_atlas_files(thumb_size, image_thumbs, rewrite_atlas_files, output_dir):
-  '''
-  Given a thumb_size (int) and image_thumbs [file_path],
-  write the total number of required atlas files at this size
-  '''
-  if not rewrite_atlas_files:
-    return
-
-  # build a directory for the atlas files
-  out_dir = join(output_dir, 'atlas_files', str(thumb_size) + 'px')
-  ensure_dir_exists(out_dir)
-
-  # specify number of columns in a 2048 x 2048px texture
-  atlas_cols = 2048/thumb_size
-
-  # subdivide the image thumbs into groups
-  atlas_image_groups = subdivide(image_thumbs, atlas_cols**2)
-
-  # generate a directory for images at this size if it doesn't exist
-  for idx, atlas_images in enumerate(atlas_image_groups):
-    print(' * creating atlas', idx + 1, 'at size', thumb_size)
-    out_path = join(out_dir, 'atlas-' + str(idx) + '.jpg')
-    # write a file containing a list of images for the current montage
-    tmp_file_path = join(output_dir, 'images_to_montage.txt')
-    with codecs.open(tmp_file_path, 'w', encoding='utf-8') as out:
-      # python 2
-      try:
-        out.write('\n'.join(map('"{0}"'.decode('utf-8').format, atlas_images)))
-      # python 3
-      except AttributeError:
-        out.write('\n'.join(map('"{0}"'.format, atlas_images)))
-
-    # build the imagemagick command to montage the images
-    cmd =  get_magick_command('montage') + ' @' + tmp_file_path + ' '
-    cmd += '-background none '
-    cmd += '-size ' + str(thumb_size) + 'x' + str(thumb_size) + ' '
-    cmd += '-geometry ' + str(thumb_size) + 'x' + str(thumb_size) + '+0+0 '
-    cmd += '-tile ' + str(atlas_cols) + 'x' + str(atlas_cols) + ' '
-    cmd += '-quality 85 '
-    cmd += '-sampling-factor 4:2:0 '
-    cmd += '"' + out_path + '"'
-    os.system(cmd)
-
-  # delete the last images to montage file
-  try:
-    os.remove(tmp_file_path)
-  except Exception:
-    pass
-
-
 def get_magick_command(cmd):
   '''
   Return the specified imagemagick command prefaced with magick if
@@ -390,10 +342,12 @@ def limit_float(f):
   return int(f*10000)/10000
 
 
-def get_files(image_Dir, image_names):
+def get_files(image_Dir):
+  image_names = []
+  image_names = os.listdir(image_Dir)
   image_paths = []
   nonjpg = []
-  extension = ['jpg', 'png']
+  extension = ['jpg', 'png', 'JPG', 'PNG', 'jpeg']
   for f in image_names:
     if f[-3:] in extension:
       image_paths.append(str(image_Dir) + '/' + str(f))
@@ -406,7 +360,6 @@ def resize_thumb(args):
   image_file, sizes, output_dir = args
   for size in sizes:
     dim = size, size
-    print(dim)
     file, ext = os.path.splitext(image_file)
     path = []
     path = file.split('/')
@@ -414,26 +367,180 @@ def resize_thumb(args):
     im.thumbnail(dim)
     im.save(output_dir + '/thumbs/' + str(size) + 'px/' + path[-1] + '.jpg', "JPEG")
 
+def make_contact_sheet(fnames,dim,photo,margins,padding):
+    """\
+    Make a contact sheet from a group of filenames:
+
+    fnames       A list of names of the image files
+    
+    ncols        Number of columns in the contact sheet
+    nrows        Number of rows in the contact sheet
+    photow       The width of the photo thumbs in pixels
+    photoh       The height of the photo thumbs in pixels
+
+    marl         The left margin in pixels
+    mart         The top margin in pixels
+    marr         The right margin in pixels
+    marb         The bottom margin in pixels
+
+    padding      The padding between images in pixels
+
+    returns a PIL image object.
+    """
+
+    # Calculate the size of the output image, based on the
+    #  photo thumb sizes, margins, and padding
+    ncols = dim[0]
+    nrows = dim[1]
+    photow = photo[0]
+    photoh = photo[1]
+    marl = margins[0]
+    mart = margins[1]
+    marr = margins[2]
+    marb = margins[3]
+
+    marw = marl+marr
+    marh = mart+ marb
+
+    padw = (ncols-1)*padding
+    padh = (nrows-1)*padding
+    isize = (ncols*photow+marw+padw,nrows*photoh+marh+padh)
+
+    # Create the new image. The background doesn't have to be white
+    white = (255,255,255)
+    inew = Image.new('RGB',isize,white)
+
+    count = 0
+    # Insert each thumb:
+    for irow in range(nrows):
+        for icol in range(ncols):
+            left = marl + icol*(photow+padding)
+            right = left + photow
+            upper = mart + irow*(photoh+padding)
+            lower = upper + photoh
+            try:
+                # Read in an image and resize appropriately
+                img = Image.open(fnames[count])
+                img_bbox = img.getbbox()
+                width = img_bbox[2] - img_bbox[0]
+                height = img_bbox[3] - img_bbox[1]
+
+                # calculate a scaling factor depending on fitting the larger dimension into the thumbnail                
+                ratio = max(height/float(photoh), width/float(photow))
+
+                newWidth = int(width/ratio)
+                newHeight = int(height/ratio)
+                newSize = (newWidth, newHeight)
+
+                img = img.resize(newSize)
+            except:
+                break
+
+            new_left = left
+            new_upper = upper
+
+            if ( newWidth < photow):
+                new_left = int( left + ((photow - newWidth)/2))
+
+            if ( newHeight < photoh):
+                new_upper = int(upper + ((photoh - newHeight)/2))
+
+            inew.paste(img, (new_left, new_upper))
+            count += 1
+    return inew
+
+def write_atlas_files(thumb_size, image_thumbs, rewrite_atlas_files, output_dir):
+
+    '''
+    Given a thumb_size (int) and image_thumbs [file_path],
+    write the total number of required atlas files at this size
+    '''
+    if not rewrite_atlas_files:
+      return
+
+    # build a directory for the atlas files
+    out_dir = join(output_dir, 'atlas_files', str(thumb_size) + 'px')
+    ensure_dir_exists(out_dir)
+
+    # specify number of columns in a 2048 x 2048px texture
+    atlas_cols = int(2048/thumb_size)
+
+    # subdivide the image thumbs into groups
+    atlas_image_groups = subdivide(image_thumbs, atlas_cols**2)
+
+    # generate a directory for images at this size if it doesn't exist
+    for idx, atlas_images in enumerate(atlas_image_groups):
+      print(' * creating atlas', idx + 1, 'at size', thumb_size)
+      out_path = join(out_dir, 'atlas-' + str(idx) + '.jpg')
+      # write a file containing a list of images for the current montage
+      tmp_file_path = join(output_dir, 'images_to_montage.txt')
+      with codecs.open(tmp_file_path, 'w', encoding='utf-8') as out:
+        # python 2
+        try:
+          out.write('\n'.join(map('"{0}"'.decode('utf-8').format, atlas_images)))
+        # python 3
+        except AttributeError:
+          out.write('\n'.join(map('"{0}"'.format, atlas_images)))
+  
+      ncols,nrows = atlas_cols,atlas_cols
+      dim = [ncols,nrows]
+      files = get_thumbs(tmp_file_path)
+      # Don't bother reading in files we aren't going to use
+      if len(files) > ncols*nrows: files = files[:ncols*nrows]
+      # These are all in terms of pixels:
+      photow,photoh = thumb_size,thumb_size
+      photo = [photow,photoh]
+      margins = [5,5,5,5]
+      padding = 1
+      inew = make_contact_sheet(files,dim,photo,margins,padding)
+      inew.save(out_path)
+    try:
+      os.remove(tmp_file_path)
+    except Exception:
+      pass
+
+
+def get_thumbs(tmp_file_path):
+  image_names = []
+  f = open(tmp_file_path, "r")
+  for line in f:
+    image_names.append(line)
+  image_paths = []
+  nonjpg = []
+  extension = ['jpg', 'png']
+  for f in image_names:
+    if f[-3:] in extension:
+      image_paths.append(str(tmp_file_path) + '/' + str(f))
+    else:
+      nonjpg.append(f)
+  return image_files
+
+def get_model_dir(model_use):
+  model_dir = ''
+  path_list= []
+  s = '/'
+  path_list = model_use.split('/')
+  model_dir = s.join(path_list[:-1])  
+  return(model_dir)
 
 if __name__ == '__main__':
+  warnings.filterwarnings("ignore")
   os.system('git clone https://github.com/YaleDHLab/pix-plot && cd pix-plot')
   args = arg_define()
-  image_names = []
-  image_names = os.listdir(args.image_Dir)
   image_Dir = args.image_Dir
-  image_files = get_files(image_Dir, image_names)
+  image_files = get_files(image_Dir)
   output_dir = args.output
-  model_use = args.model_use 
+  model_use = args.model_use
+  model_dir = get_model_dir(model_use)
   sizes = [16, 32, 64, 128]
   n_clusters = args.clusters
   errored_images = set()
-  model_dir = args.model_dir
   vector_files = []
   method = args.method
   rewrite_image_thumbs = False
   rewrite_image_vectors = False
   rewrite_atlas_files = True
-  validate_files = args.validate
+  validate_files = True
   print(' * writing PixPlot outputs with ' + str(n_clusters) +
       ' clusters for ' + str(len(image_files)) +
       ' images to folder ' + output_dir)
@@ -443,7 +550,9 @@ if __name__ == '__main__':
   create_image_thumbs(image_files, output_dir, rewrite_image_thumbs, errored_images, sizes)
   create_image_vectors(errored_images, image_files, output_dir)
   v_files, image_v = load_image_vectors(output_dir)
+  print(image_v)
   write_json(output_dir, v_files, image_v, n_clusters)
   create_atlas_files(sizes)
+  print('Done, launch webserver by typing "localhost:8000" into your favorite browser!')
   os.system('cd pix-plot && python -m http.server 8000')
 
