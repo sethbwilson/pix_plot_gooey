@@ -21,7 +21,7 @@ conda activate pix
 Launch code from terminal using command
 
 ```
-pythonw pix_plot_gooey_env.py
+pythonw pix_plot_gooey.py
 ```
 
 A window will open up with several spaces to fill in. 
