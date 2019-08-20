@@ -507,7 +507,7 @@ def get_thumbs(tmp_file_path):
     image_names.append(line)
   image_paths = []
   nonjpg = []
-  extension = ['jpg', 'png']
+  extension = ['jpg', 'png', 'JPG', 'PNG', 'jpeg']
   for f in image_names:
     if f[-3:] in extension:
       image_paths.append(str(tmp_file_path) + '/' + str(f))
