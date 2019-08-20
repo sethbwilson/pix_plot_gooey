@@ -6,7 +6,7 @@ Pix_plot_gooey is a tool that provides users with the ability to visualize and a
 To clone this repository to you computer use 
 
 ```
-git clone https://github.com/sethbwilson/pix_plot_gooey.git
+git clone https://github.com/sethbwilson/pix_plot_gooey.git && cd pix_plot_gooey
 ```
 Then, to create a new envitonment with all the correct dependencies run:
 ```
